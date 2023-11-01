@@ -5,7 +5,7 @@ import multer from 'multer';
 const router = express.Router();
 
 
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: '../uploads/' });
 
 
 // post api 
