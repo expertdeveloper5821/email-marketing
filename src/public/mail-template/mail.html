@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PattseHeadshot Newsletter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f2f2f2;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background-color: #3355AA;
+      color: #ffffff;
+      text-align: center;
+      padding: 10px;
+      /* height: auto; */
+    }
+
+    .header img {
+      width: 200px;
+
+    }
+
+    .content {
+      padding: 20px;
+    }
+
+    .content h2 {
+      margin: 0;
+      padding-bottom: 10px;
+    }
+
+    .social-icons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      margin-left: 40px;
+    }
+
+    .social-icons a img {
+      max-width: 40px;
+      height: auto;
+      padding: 25px;
+    }
+
+    .footer {
+      text-align: center;
+      background-color: #3355AA;
+      color: #ffffff;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .footer a {
+      color: #ffffff;
+      text-decoration: none;
+    }
+
+    .footer-logo {
+      max-width: 200px;
+      margin-right: 20px;
+      display: flex;
+      padding: 20px 0px;
+    }
+
+    .footer-link {
+      text-align: left;
+    }
+
+    .event-details1 {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .event-details1 p {
+      flex: -1;
+      margin: 0;
+    }
+
+    .event-details2 {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: inherit;
+    }
+    .event-details2 p {
+      flex: -1;
+      margin: 0;
+    }
+    /* .event-details3 {
+      padding-top: inherit;
+    } */
+
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="header">
+
+      <h1><img src="https://res.cloudinary.com/dh2lkjd5n/image/upload/v1698657327/asset-25-5_gmbrx5.png" alt="PattseHeadshot Logo"></h1>
+    </div>
+    <div class="content">     
+      <p>We hope this message finds you well and in high spirits. We're thrilled to announce our next exciting event.
+      </p>
+
+      <hr style="border: 1px solid #ccc; margin: 20px 0;">
+
+      <h2>Event Details:-</h2>
+      <h2 class="heading">29 September <br> <span class="time">9:00PM</span></h2>
+      <div class="event-details1">
+        <p><strong>Type:</strong> {{gameType}}</p>
+      </div>
+      <div class="event-details2">
+        <p><strong>Map:</strong> {{mapType}}</p>
+      </div>
+    <!-- <div class="event-details3">
+      <img src="{{mapImg}}" alt="Map Image" style="max-width: 100%; height: auto;">
+    </div> -->
+
+      <hr style="border: 1px solid #ccc; margin: 20px 0;">
+
+      <p><strong>Be Online at Schedule Time:</strong> On the event day, make sure you're online and ready to jump into
+        the action at exactly Schedule Time!.</p>
+
+      <p><strong>Prizes and Rewards:</strong> We've got some fantastic prizes lined up for the winners of the BGMI
+        match. It's not just about winning; participating alone will earn you respect and bragging rights among your
+        fellow gamers!</p>
+
+      <p><strong>Stay Connected:</strong> For all updates, announcements, and to interact with our gaming community,
+        follow us on our social media platforms:</p>
+      <div class="social-icons">
+        <a target="_blank" href="https://twitter.com/headshot_p4491"><img
+            src="	https://cdn-icons-png.flaticon.com/512/5969/5969020.png" alt="Twitter"></a>
+        <a target="_blank" href="https://www.facebook.com/profile.php?id=100095239340085&is_tour_dismissed=true"><img
+            src="https://cdn-icons-png.flaticon.com/512/2626/2626269.png" alt="Facebook"></a>
+        <a target="_blank" href="https://www.instagram.com/pattseheadshotsj/"><img
+            src="https://cdn-icons-png.flaticon.com/512/1384/1384063.png" alt="Instagram"></a>
+        <a target="_blank" href="https://t.me/pattseheadshotsj"><img
+            src="https://cdn-icons-png.flaticon.com/512/2111/2111644.png" alt="Telegram"></a>
+        <a target="_blank" href="https://www.youtube.com/channel/UC8GDIEtwWV_67Fxpxfa298Q"><img
+            src="https://cdn-icons-png.flaticon.com/512/4494/4494485.png" alt="Youtube"></a>
+      </div>
+
+      <p>Don't miss out on this exciting opportunity to showcase your BGMI skills, connect with fellow gamers, and have
+        a blast!</p>
+      <p>Spread the word, gather your squad, and let's make this BGMI match an unforgettable gaming experience. See you
+        on the battlefield at Schedule Time!</p>
+    </div>
+
+    <div class="footer">
+      <div>
+        <img src="https://res.cloudinary.com/dh2lkjd5n/image/upload/v1698657327/asset-25-5_gmbrx5.png" alt="PattseHeadshot Logo" class="footer-logo">
+      </div>
+      <div class="footer-link">
+        <p><strong>Best regards:- The PattseHeadshot Team</strong></p>
+        <p><strong>Contact:</strong> <a target="_blank"
+            href="mailto:support@pattseheadshot.com">support@pattseheadshot.com</a></p>
+        <p><strong>Website:</strong> <a target="_blank" href="http://www.pattseheadshot.com/">www.pattseheadshot.com</a>
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  </div>
+
+
+
+</body>
+
+</html>
