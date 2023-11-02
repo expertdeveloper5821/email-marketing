@@ -6,13 +6,26 @@ import csv from 'csv-parser';
 import fs from 'fs';
 import path from 'path';
 import cron from 'node-cron';
+import moment from 'moment-timezone';
+
 
 
 const router = express.Router(); // Initialize Express router
-router.use(express.static('public')); // Serve static files from the public directory
+router.use(express.static('views')); // Serve static files from the public directory
 
 
-
+// Function to convert frontend schedule format to cron schedule format
+const convertToFrontendSchedule = (frontendSchedule = '2023-11-02T16:45:00+05:30') => {
+  const frontendDate = new Date(frontendSchedule);
+  const ISTDate = moment(frontendDate).format("DD-MM-YYYY HH:mm");
+  const dateTimeFormat = ISTDate.split(" ");
+  const time = dateTimeFormat[1];
+  const [date] = ISTDate.split(' ')
+  const [dayOfMonth, month, year] = date.split('-')
+  const [hour, minute, ...rest] = time.split(":")
+  const dayOfWeek = frontendDate.getDay();
+  return `${minute} ${hour} ${dayOfMonth} ${month} ${dayOfWeek}`;
+};
 
 // Handle CSV file upload
 export const uploadCSV = async (req: Request, res: Response) => {
@@ -23,21 +36,18 @@ export const uploadCSV = async (req: Request, res: Response) => {
     }
 
     // Extract template file name from request body
-    const { templateFile } = req.body;
+    const { templateType, date, time, mapType, gameType } = req.body;
 
     // Validate templateFile field
-    if (!templateFile) {
+    if (!templateType) {
       return res.status(400).json({ message: 'Template file not specified' });
     }
 
     // Validate if the specified template file exists
-    const templateFiles = ['mail.html', 'mails.html', 'index.html'];
-    if (!templateFiles.includes(templateFile)) {
-      return res.status(400).json({ message: 'Template file not found' });
-    }
+    const templateFiles = ['bgmi.html', 'hiring.html', 'marketing.html'];
 
     // Construct template file path using template literal
-    const templateFilePath = path.join(__dirname, `../public/mail-template/${templateFile}`);
+    const templateFilePath = path.join(__dirname, `../views/mail-template/${templateFiles[templateType - 1]}`);
 
     // Read the specified mail template file
     const mailTemplate = fs.readFileSync(templateFilePath, 'utf-8');
@@ -65,25 +75,22 @@ export const uploadCSV = async (req: Request, res: Response) => {
 
           if (existingEmails && existingEmails.length > 0) {
             // Create a set of existing emails
-            const existingEmailSet = new Set<string>(existingEmails[0].email);
+            const existingEmailSet = existingEmails[0].email;
 
             // Initialize a set for updated emails
-            const updatedEmailSet = new Set<string>();
+            const updatedEmailSet = []
 
             // Filter out existing emails from the results 
             for (const item of results) {
-              if (!existingEmailSet.has(item)) {
-                updatedEmailSet.add(item); // Add non-existing emails to the updated set
+              if (!existingEmailSet.includes(item)) {
+                updatedEmailSet.push(item); // Add non-existing emails to the updatedEmailSet
               }
             }
-
-            // Convert the set to an array of unique emails  
-            const uniqueEmails = Array.from(updatedEmailSet);
 
             try {
               await Email.updateOne(
                 { _id: existingEmails[0]._id },
-                { $addToSet: { email: { $each: uniqueEmails } } }
+                { $addToSet: { email: { $each: updatedEmailSet } } }
               );
             } catch (error) {
               console.error('Error updating email:', error);
@@ -91,9 +98,10 @@ export const uploadCSV = async (req: Request, res: Response) => {
             }
           } else {
             try {
-              await new Email({
+              const newEmail = new Email({
                 email: results,
-              }).save();
+              })
+              await newEmail.save();
             } catch (error) {
               console.error('Error saving email:', error);
               return res.status(500).json({ message: 'Error saving email' });
@@ -101,7 +109,7 @@ export const uploadCSV = async (req: Request, res: Response) => {
           }
 
           // after saving the email in db, scheduled the cron job for email
-          scheduleEmails(results, req.body.cronSchedule, mailTemplate);
+          scheduleEmails(results, req.body.dateAndTime, mailTemplate, date, time, mapType, gameType);
 
           // Delete the uploaded file after processing it
           if (req.file) {
@@ -129,15 +137,24 @@ export const uploadCSV = async (req: Request, res: Response) => {
 
 
 // Schedule email sending
-const scheduleEmails = async (emails: string[], cronSchedule: string, mailTemplate: string) => {
+const scheduleEmails = async (emails: string[], dateAndTime: string, mailTemplate: string, date: string, time: string, mapType: string, gameType: string) => {
   try {
+
+    // Replace placeholders with actual data
+    const emailContent = mailTemplate
+      .replace('{{gameType}}', gameType)
+      .replace('{{mapType}}', mapType)
+      .replace('{{date}}', date)
+      .replace('{{time}}', `${time}`);
+
+    // Convert the frontend cron schedule to the cron format
+    const validDateAndTime = convertToFrontendSchedule(dateAndTime);
     // Schedule the sending of emails based on the cron schedule given in body 48 11 * * 3 
-    cron.schedule(cronSchedule, async () => {
+    cron.schedule(validDateAndTime, async () => {
       try {
 
         // take the emails and template
         for (const email of emails) {
-          const emailContent = mailTemplate;
 
           // Prepare email data 
           const emailToSend = {
@@ -164,31 +181,37 @@ const scheduleEmails = async (emails: string[], cronSchedule: string, mailTempla
 export const sendEmails = async (req: Request, res: Response) => {
   try {
     // Extract template file name, cron schedule, and email array from request body
-    const { templateFile, cronSchedule, emails } = req.body;
+    const { templateType, dateAndTime, emails, date, time, mapType, gameType } = req.body;
 
     // Validate templateFile and cronSchedule fields
-    if (!templateFile || !cronSchedule) {
+    if (!templateType || !dateAndTime) {
       return res.status(400).json({ message: 'Template file or cron schedule not specified' });
     }
 
+    // Convert the frontend cron schedule to the cron format
+    const validDateAndTime = convertToFrontendSchedule(dateAndTime);
+
     // Validate if the specified template file exists
-    const templateFiles = ['mail.html', 'mails.html', 'index.html'];
-    if (!templateFiles.includes(templateFile)) {
-      return res.status(400).json({ message: 'Template file not found' });
-    }
+    const templateFiles = ['bgmi.html', 'hiring.html', 'marketing.html'];
 
     // Construct template file path using template literal
-    const templateFilePath = path.join(__dirname, `../public/mail-template/${templateFile}`);
+    const templateFilePath = path.join(__dirname, `../views/mail-template/${templateFiles[templateType - 1]}`);
 
     // Read the specified mail template file
     const mailTemplate = fs.readFileSync(templateFilePath, 'utf-8');
 
+    // Replace placeholders with actual data
+    const emailContent = mailTemplate
+      .replace('{{gameType}}', gameType)
+      .replace('{{mapType}}', mapType)
+      .replace('{{date}}', date)
+      .replace('{{time}}', `${time}`);
+
     // If emails are provided in the request body, send emails to those specific addresses
     if (emails && emails.length > 0) {
       // Schedule the cron job for sending emails based on the specified cron schedule
-      cron.schedule(cronSchedule, async () => {
+      cron.schedule(validDateAndTime, async () => {
         for (const email of emails) {
-          const emailContent = mailTemplate;
 
           // Prepare email data 
           const emailToSend = {
@@ -205,13 +228,19 @@ export const sendEmails = async (req: Request, res: Response) => {
 
       return res.status(200).json({ message: 'Emails scheduled' });
     } else {
+      // Replace placeholders with actual data
+      const emailContent = mailTemplate
+        .replace('{{gameType}}', gameType)
+        .replace('{{mapType}}', mapType)
+        .replace('{{date}}', date)
+        .replace('{{time}}', `${time}`);
+
       // if not email body provided then Schedule the cron job for sending emails to all email in db
-      cron.schedule(cronSchedule, async () => {
+      cron.schedule(validDateAndTime, async () => {
         const allEmails = await Email.find({}, 'email');
         const allEmailAddresses = allEmails.map((item) => item.email).flat();
 
         for (const email of allEmailAddresses) {
-          const emailContent = mailTemplate;
 
           // Prepare email data 
           const emailToSend = {
