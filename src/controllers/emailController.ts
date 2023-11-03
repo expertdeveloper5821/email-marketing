@@ -181,7 +181,7 @@ const scheduleEmails = async (emails: string[], dateAndTime: string, mailTemplat
 export const sendEmails = async (req: Request, res: Response) => {
   try {
     // Extract template file name, cron schedule, and email array from request body
-    const { templateType, dateAndTime, emails, date, time, mapType, gameType } = req.body;
+    const { templateType, dateAndTime,  emails, date, time, mapType, gameType } = req.body;
 
     // Validate templateFile and cronSchedule fields
     if (!templateType || !dateAndTime) {
