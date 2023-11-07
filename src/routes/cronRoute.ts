@@ -1,12 +1,12 @@
 import express from "express";
-import { sendEmailsTO, getAllCronDetails, getCronsById, stopCronSchedule } from "../controllers/cronController";
+import { sendEmails, getAllCronDetails, getCronsById, stopCronSchedule } from "../controllers/cronController";
 
 
 const router = express.Router();
 
 
 // post api
-router.post('/send-email', sendEmailsTO);
+router.post('/send-email', sendEmails);
 
 // get all crons
 router.get('/getAll-crons', getAllCronDetails)

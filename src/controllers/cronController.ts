@@ -53,7 +53,7 @@ const stopScheduledEmailJob = async (cronUuid: string) => {
 
 
 // New API endpoint for sending emails with customizable options
-export const sendEmailsTO = async (req: Request, res: Response) => {
+export const sendEmails = async (req: Request, res: Response) => {
     try {
         // Extract template file name, cron schedule, and email array from request body
         const { templateType, dateAndTimeFrom, dateAndTimeTo, dateAndTimeStop, uniqueCronName, emails, date, time, mapType, gameType } = req.body;
