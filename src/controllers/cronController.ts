@@ -1,4 +1,3 @@
-import Email from '../models/emailModels';
 import express, { Request, Response } from 'express';
 import { transporter } from '../middlewares/email';
 import { environmentConfig } from '../config/environmentConfig';
@@ -6,10 +5,12 @@ import fs from 'fs';
 import path from 'path';
 import cron, { ScheduledTask } from 'node-cron';
 import moment from 'moment-timezone';
+import Cron from '../models/cronModels';
+import { v4 as uuidv4 } from "uuid";
+import User from '../models/authModel';
 
 
-
-const router = express.Router(); // Initialize Express router
+export const router = express.Router(); // Initialize Express router
 router.use(express.static('views')); // Serve static files from the public directory
 
 
@@ -28,17 +29,34 @@ const convertToFrontendSchedule = (frontendSchedule = '2023-11-02T16:45:00+05:30
 
 
 let scheduledEmailJob: ScheduledTask | undefined;
-const stopScheduledEmailJob = () => {
-    if (scheduledEmailJob) {
-        scheduledEmailJob.stop();
+const stopScheduledEmailJob = async (cronUuid: string) => {
+    try {
+        if (scheduledEmailJob) {
+            scheduledEmailJob.stop();
+
+            const updatedCron = await Cron.findOneAndUpdate(
+                { cronUuid: cronUuid },
+                { $set: { cronStatus: false } },
+                { new: true }
+            );
+
+            if (updatedCron) {
+                return "Cron status updated to false:";
+            } 
+            scheduledEmailJob.stop();
+        }
+    } catch (error) {
+        console.error("Error updating cron status:", error);
     }
 };
+
+
 
 // New API endpoint for sending emails with customizable options
 export const sendEmailsTO = async (req: Request, res: Response) => {
     try {
         // Extract template file name, cron schedule, and email array from request body
-        const { templateType, dateAndTimeFrom, dateAndTimeTo, dateAndTimeStop, emails, date, time, mapType, gameType } = req.body;
+        const { templateType, dateAndTimeFrom, dateAndTimeTo, dateAndTimeStop, uniqueCronName, emails, date, time, mapType, gameType } = req.body;
 
         // Validate templateFile and cronSchedule fields
         if (!templateType) {
@@ -67,12 +85,11 @@ export const sendEmailsTO = async (req: Request, res: Response) => {
 
         // If emails are provided in the request body, send emails to those specific addresses
         if (emails && emails.length > 0) {
-            const findEmailPromises = emails.map(async (email: string) => {
-                const findEmail = await Email.findOne({ email });
+            const findEmailPromises = emails.map(async (emails: string) => {
+                const findEmail = await User.findOne({ email: emails });
                 return findEmail;
             });
             const foundEmails = await Promise.all(findEmailPromises);
-
             if (!foundEmails.every((email) => email)) {
                 return res.status(200).json({ message: 'Emails not found' });
             } else {
@@ -82,7 +99,7 @@ export const sendEmailsTO = async (req: Request, res: Response) => {
                         // Prepare email data 
                         const emailToSend = {
                             from: environmentConfig.EMAIL_FROM,
-                            subject: 'PattseHeadshot Newsletter: Join Us for a BGMI Match',
+                            subject: 'Newsletter',
                             to: email,
                             html: emailContent,
                         };
@@ -90,15 +107,24 @@ export const sendEmailsTO = async (req: Request, res: Response) => {
                         await transporter.sendMail(emailToSend);
                     }
                 });
-
-                cron.schedule(validDateAndTimeTo, () => {
-                    stopScheduledEmailJob();
+                const newUuid = uuidv4();
+                // Save the data to the database
+                const cronData = await Cron.create({
+                    dateAndTimeFrom,
+                    dateAndTimeTo,
+                    dateAndTimeStop,
+                    uniqueCronName,
+                    cronUuid: newUuid,
                 });
 
-                cron.schedule(validDateAndTimeStop, () => {
-                    stopScheduledEmailJob();
+                cron.schedule(validDateAndTimeTo, async () => {
+                    await stopScheduledEmailJob(newUuid);
                 });
-                return res.status(200).json({ message: 'Emails scheduled' });
+
+                cron.schedule(validDateAndTimeStop, async () => {
+                    await stopScheduledEmailJob(newUuid);
+                });
+                return res.status(200).json({ message: 'Emails scheduled', cronData });
             }
         } else {
             // Replace placeholders with actual data
@@ -106,11 +132,11 @@ export const sendEmailsTO = async (req: Request, res: Response) => {
                 .replace('{{gameType}}', gameType)
                 .replace('{{mapType}}', mapType)
                 .replace('{{date}}', date)
-                .replace('{{time}}', `${time}`);
+                .replace('{{time}}', time);
 
             // if not email body provided then Schedule the cron job for sending emails to all email in db
             scheduledEmailJob = cron.schedule(validDateAndTimeFrom, async () => {
-                const allEmails = await Email.find({}, 'email');
+                const allEmails = await User.find({}, 'email');
                 const allEmailAddresses = allEmails.map((item) => item.email).flat();
 
                 for (const email of allEmailAddresses) {
@@ -118,7 +144,7 @@ export const sendEmailsTO = async (req: Request, res: Response) => {
                     // Prepare email data 
                     const emailToSend = {
                         from: environmentConfig.EMAIL_FROM,
-                        subject: 'PattseHeadshot Newsletter: Join Us for a BGMI Match',
+                        subject: 'Newsletter',
                         to: email,
                         html: emailContent,
                     };
@@ -127,14 +153,25 @@ export const sendEmailsTO = async (req: Request, res: Response) => {
                     await transporter.sendMail(emailToSend);
                 }
             });
+
+            const newUuid = uuidv4();
+            // Save the data to the database
+            const cronData = await Cron.create({
+                dateAndTimeFrom,
+                dateAndTimeTo,
+                dateAndTimeStop,
+                uniqueCronName,
+                cronUuid: newUuid,
+            });
             cron.schedule(validDateAndTimeTo, () => {
-                stopScheduledEmailJob();
+                stopScheduledEmailJob(newUuid);
             });
 
             cron.schedule(validDateAndTimeStop, () => {
-                stopScheduledEmailJob();
+                stopScheduledEmailJob(newUuid);
             });
-            return res.status(200).json({ message: 'Emails scheduled' });
+
+            return res.status(200).json({ message: 'Emails scheduled', cronData });
         }
     } catch (error) {
         console.error('Internal server error:', error);
@@ -143,7 +180,69 @@ export const sendEmailsTO = async (req: Request, res: Response) => {
 };
 
 
+// get all crons details
+export const getAllCronDetails = async (req: Request, res: Response) => {
+    try {
+        const findCron = await Cron.find({ cronStatus: true })
+        if (findCron.length === 0) {
+            return res.status(404).json({ message: 'No active cron found' });
+        } else {
+            return res.status(200).json({ data: findCron });
+        }
+    } catch (error) {
+        console.error('Internal server error:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+}
 
-export default router;
+
+// get cron details by id
+export const getCronsById = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const isFindCron = await Cron.findById({ _id: id })
+        if (!isFindCron) {
+            return res.status(404).json({ message: 'cron not found' });
+        } else {
+            return res.status(200).json({ data: isFindCron });
+        }
+    } catch (error) {
+        console.error('Internal server error:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
+
+// stopr cron job manual
+export const stopCronSchedule = async (req: Request, res: Response) => {
+    try {
+        const { dateAndTimeStop, cronUuid } = req.body
+        if (!dateAndTimeStop || !cronUuid) {
+            return res.status(404).json({ message: 'Cron Date and time or Cron id not found' });
+        } else {
+            // Stop the scheduled email job based on the provided cronUuid
+            await stopScheduledEmailJob(cronUuid);
+            // Update the 'cronStatus' to false in the database for the provided cronUuid
+            const updatedCron = await Cron.findOneAndUpdate(
+                { cronUuid },
+                { $set: { cronStatus: false, dateAndTimeStop } },
+                { new: true }
+            );
+            if (updatedCron) {
+                return res.status(200).json({ message: 'Cron job stopped and status updated', updatedCron });
+            } else {
+                return res.status(404).json({ message: 'Cron not found with the provided cronUuid' });
+            }
+        }
+    } catch (error) {
+        console.error('Internal server error:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
+
+
+
+
 
 
