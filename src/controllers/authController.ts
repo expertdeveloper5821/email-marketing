@@ -7,7 +7,6 @@ import { CustomRequest } from '../middlewares/verifyToken'
 
 
 const router = express.Router(); // Initialize Express router
-router.use(express.static('views')); // Serve static files from the public directory
 
 
 // Handle CSV file upload
