@@ -10,7 +10,8 @@ const app:Express = express();
 const port: number = environmentConfig.SERVER_PORT;
 
 // importing routes
-import emilRoute from './routes/emailRoute';
+import authRoute from './routes/authRout';
+import cronRoute from './routes/cronRoute';
 
 
 // cors middleware 
@@ -23,7 +24,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'views')));
 
 // using middleware routes
-app.use('/api/v1',emilRoute)
+app.use('/api/v1',authRoute)
+app.use('/api/v1',cronRoute)
 
 
 app.get('/', (req, res) => {
