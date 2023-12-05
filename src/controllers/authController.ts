@@ -56,17 +56,6 @@ export const uploadCSV = async (req: CustomRequest, res: Response) => {
               }
             }
   
-            // Delete the uploaded file after processing it
-            if (req.file) {
-              fs.unlink(req.file.path, (err) => {
-                if (err) {
-                  console.error('Error occurred while trying to delete the file:', err);
-                } else {
-                  return 'File has been successfully deleted.';
-                }
-              });
-            }
-  
             return res.status(200).json({ message: 'CSV file uploaded and processed successfully' });
           } catch (error) {
             console.error('Error processing CSV:', error);

@@ -54,12 +54,11 @@ const stopScheduledEmailJob = async (uniqueCronName: string) => {
 // get all user email 
 export const getAllUserEmail = async (req: Request, res: Response) => {
     try {
-        const findEmail = await User.find({}, 'email');
-        if (findEmail.length === 0) {
+        const findUser = await User.find({});
+        if (findUser.length === 0) {
             return res.status(400).json({ message: 'Emails not found' });
         } else {
-            const userEmail = findEmail.map((user) => user.email);
-            return res.status(400).json({ message: 'Emais found', userEmail });
+            return res.status(200).json({ message: 'User founds', findUser });
         }
     } catch (error) {
         console.error("Error updating cron status:", error);
